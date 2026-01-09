@@ -154,8 +154,17 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(f"{APP_NAME} v{APP_VERSION}")
         self.setMinimumSize(1200, 800)
         
-        # Set window icon
-        icon_path = Path(__file__).parent.parent / "assets" / "icon.png"
+        # Set window icon (works both in dev and PyInstaller bundle)
+        if getattr(sys, 'frozen', False):
+            # Running as PyInstaller bundle
+            base_path = Path(sys._MEIPASS)
+        else:
+            # Running in development
+            base_path = Path(__file__).parent.parent
+        
+        icon_path = base_path / "assets" / "icon.ico"
+        if not icon_path.exists():
+            icon_path = base_path / "assets" / "icon.png"
         if icon_path.exists():
             self.setWindowIcon(QIcon(str(icon_path)))
         

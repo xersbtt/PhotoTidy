@@ -28,14 +28,18 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
       
-      - name: Build executable
+      - name: Build executable (folder mode for fast startup)
         run: |
-          pyinstaller --name PhotoTidy --onefile --windowed --icon=assets/icon.png --add-data "assets;assets" main.py
+          pyinstaller --name PhotoTidy --onedir --windowed --icon=assets/icon.ico --add-data "assets;assets" main.py
       
       - name: Get version from tag
         id: get_version
         shell: bash
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      
+      - name: Create ZIP archive
+        run: |
+          Compress-Archive -Path "dist/PhotoTidy" -DestinationPath "dist/PhotoTidy-${{ steps.get_version.outputs.VERSION }}-Windows.zip"
       
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -47,13 +51,13 @@ jobs:
             See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
             
             ### Installation
-            1. Download `PhotoTidy.exe` below
-            2. Run the executable (no installation required)
+            1. Download and extract the ZIP file below
+            2. Run `PhotoTidy.exe` from the extracted folder
             
             ### Requirements
             - Windows 10/11
           files: |
-            dist/PhotoTidy.exe
+            dist/PhotoTidy-${{ steps.get_version.outputs.VERSION }}-Windows.zip
           draft: false
           prerelease: false
         env:

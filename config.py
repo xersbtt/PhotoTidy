@@ -6,7 +6,7 @@ from pathlib import Path
 
 # Application info
 APP_NAME = "PhotoTidy"
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.2.0"
 
 # Supported file extensions
 STANDARD_IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.tiff', '.tif', '.webp', '.heic', '.heif', '.bmp', '.gif'}
@@ -18,12 +18,12 @@ THUMBNAIL_SIZE = (200, 200)
 THUMBNAIL_QUALITY = 85
 
 # Cache directory
-CACHE_DIR = Path(os.environ.get('LOCALAPPDATA', Path.home())) / 'PhotoSorter' / 'cache'
+CACHE_DIR = Path(os.environ.get('LOCALAPPDATA', Path.home())) / 'PhotoTidy' / 'cache'
 THUMBNAIL_CACHE_DIR = CACHE_DIR / 'thumbnails'
 GEOCODING_CACHE_FILE = CACHE_DIR / 'geocoding_cache.json'
 
 # Geocoding settings
-GEOCODING_USER_AGENT = "PhotoSorterApp/1.0"
+GEOCODING_USER_AGENT = "PhotoTidy/1.2"
 GEOCODING_RATE_LIMIT_SECONDS = 1.0  # Nominatim requires 1 request per second
 
 # Date format options for folder naming

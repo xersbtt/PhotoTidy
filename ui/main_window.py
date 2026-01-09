@@ -39,6 +39,10 @@ from .filter_panel import FilterPanel
 from .location_dialog import LocationDialog
 from .settings_dialog import SettingsDialog
 from .about_dialog import AboutDialog
+from .resize_dialog import ResizeDialog
+from .watermark_dialog import WatermarkDialog
+from .convert_dialog import ConvertDialog
+from .batch_dialog import BatchDialog
 
 logger = logging.getLogger(__name__)
 
@@ -260,6 +264,10 @@ class MainWindow(QMainWindow):
         self.toolbar.rotate_cw_clicked.connect(self._rotate_clockwise)
         self.toolbar.rotate_ccw_clicked.connect(self._rotate_counterclockwise)
         self.toolbar.set_location_clicked.connect(self._set_location)
+        self.toolbar.resize_clicked.connect(self._resize_selected)
+        self.toolbar.watermark_clicked.connect(self._watermark_selected)
+        self.toolbar.convert_clicked.connect(self._convert_selected)
+        self.toolbar.batch_clicked.connect(self._batch_process_selected)
         self.toolbar.move_clicked.connect(self._move_selected)
         self.toolbar.copy_clicked.connect(self._copy_selected)
         self.toolbar.undo_clicked.connect(self._undo_last)
@@ -899,3 +907,40 @@ class MainWindow(QMainWindow):
             msg += f"\n{len(errors)} errors occurred."
         
         QMessageBox.information(self, "Rotation Complete", msg)
+    
+    def _resize_selected(self):
+        """Open the resize dialog for selected photos."""
+        selected = self.grouper.selected_photos
+        if not selected:
+            return
+        
+        dialog = ResizeDialog(selected, self)
+        dialog.exec()
+    
+    def _watermark_selected(self):
+        """Open the watermark dialog for selected photos."""
+        selected = self.grouper.selected_photos
+        if not selected:
+            return
+        
+        dialog = WatermarkDialog(selected, self)
+        dialog.exec()
+    
+    def _convert_selected(self):
+        """Open the convert dialog for selected photos."""
+        selected = self.grouper.selected_photos
+        if not selected:
+            return
+        
+        dialog = ConvertDialog(selected, self)
+        dialog.exec()
+    
+    def _batch_process_selected(self):
+        """Open the batch process dialog for selected photos."""
+        selected = self.grouper.selected_photos
+        if not selected:
+            return
+        
+        dialog = BatchDialog(selected, self)
+        dialog.exec()
+

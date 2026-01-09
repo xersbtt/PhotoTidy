@@ -4,7 +4,7 @@ Toolbar widget with sorting controls and action buttons.
 from typing import List
 
 from PySide6.QtWidgets import (
-    QWidget, QHBoxLayout, QPushButton, QLabel, QSpacerItem, QSizePolicy
+    QWidget, QHBoxLayout, QPushButton, QLabel, QSpacerItem, QSizePolicy, QMenu
 )
 from PySide6.QtCore import Signal
 from PySide6.QtGui import QFont
@@ -20,6 +20,10 @@ class ToolBar(QWidget):
     set_location_clicked = Signal()
     rotate_cw_clicked = Signal()
     rotate_ccw_clicked = Signal()
+    resize_clicked = Signal()
+    watermark_clicked = Signal()
+    convert_clicked = Signal()
+    batch_clicked = Signal()
     move_clicked = Signal()
     copy_clicked = Signal()
     undo_clicked = Signal()
@@ -39,48 +43,118 @@ class ToolBar(QWidget):
         layout.setContentsMargins(12, 8, 12, 8)
         layout.setSpacing(8)
         
-        # Open folder button
-        self.open_btn = QPushButton("📁 Open Folder")
-        self.open_btn.setToolTip("Open a folder (replaces current view)")
-        self.open_btn.setStyleSheet(self._primary_button_style())
-        self.open_btn.clicked.connect(self.open_folder_clicked.emit)
-        layout.addWidget(self.open_btn)
+        # File dropdown menu
+        file_btn = QPushButton("📁 File ▼")
+        file_btn.setStyleSheet(self._primary_button_style())
+        file_menu = QMenu(self)
+        file_menu.setStyleSheet(self._menu_style())
         
-        # Open files button
-        self.open_files_btn = QPushButton("📄")
-        self.open_files_btn.setToolTip("Open individual files")
-        self.open_files_btn.setFixedSize(32, 32)
-        self.open_files_btn.setStyleSheet(self._icon_button_style())
-        self.open_files_btn.clicked.connect(self.open_files_clicked.emit)
-        layout.addWidget(self.open_files_btn)
+        open_folder_action = file_menu.addAction("📁 Open Folder")
+        open_folder_action.triggered.connect(self.open_folder_clicked.emit)
+        open_files_action = file_menu.addAction("📄 Open Files")
+        open_files_action.triggered.connect(self.open_files_clicked.emit)
+        add_folder_action = file_menu.addAction("➕ Add Folder")
+        add_folder_action.triggered.connect(self.add_folder_clicked.emit)
         
-        # Add folder button
-        self.add_folder_btn = QPushButton("+📁")
-        self.add_folder_btn.setToolTip("Add folder (append to current view)")
-        self.add_folder_btn.setFixedSize(32, 32)
-        self.add_folder_btn.setStyleSheet(self._icon_button_style())
-        self.add_folder_btn.clicked.connect(self.add_folder_clicked.emit)
-        layout.addWidget(self.add_folder_btn)
+        file_btn.setMenu(file_menu)
+        layout.addWidget(file_btn)
         
-        # Separator
-        layout.addSpacing(16)
+        # Edit dropdown menu
+        edit_btn = QPushButton("✏️ Edit ▼")
+        edit_btn.setStyleSheet(self._button_style())
+        edit_menu = QMenu(self)
+        edit_menu.setStyleSheet(self._menu_style())
         
-        # Selection buttons
-        self.select_all_btn = QPushButton("Select All")
-        self.select_all_btn.setStyleSheet(self._button_style())
+        rename_action = edit_menu.addAction("✏️ Rename...")
+        rename_action.triggered.connect(self.rename_clicked.emit)
+        location_action = edit_menu.addAction("📍 Set Location...")
+        location_action.triggered.connect(self.set_location_clicked.emit)
+        edit_menu.addSeparator()
+        rotate_ccw_action = edit_menu.addAction("↺ Rotate CCW")
+        rotate_ccw_action.triggered.connect(self.rotate_ccw_clicked.emit)
+        rotate_cw_action = edit_menu.addAction("↻ Rotate CW")
+        rotate_cw_action.triggered.connect(self.rotate_cw_clicked.emit)
+        
+        edit_btn.setMenu(edit_menu)
+        self.edit_btn = edit_btn
+        self.edit_btn.setEnabled(False)
+        layout.addWidget(edit_btn)
+        
+        layout.addSpacing(8)
+        
+        # Image processing buttons
+        self.batch_btn = QPushButton("⚡ Batch")
+        self.batch_btn.setToolTip("Batch process with multiple operations")
+        self.batch_btn.setStyleSheet(self._action_button_style())
+        self.batch_btn.clicked.connect(self.batch_clicked.emit)
+        self.batch_btn.setEnabled(False)
+        layout.addWidget(self.batch_btn)
+        
+        self.resize_btn = QPushButton("📐 Resize")
+        self.resize_btn.setToolTip("Resize selected photos")
+        self.resize_btn.setStyleSheet(self._button_style())
+        self.resize_btn.clicked.connect(self.resize_clicked.emit)
+        self.resize_btn.setEnabled(False)
+        layout.addWidget(self.resize_btn)
+        
+        self.watermark_btn = QPushButton("💧 Watermark")
+        self.watermark_btn.setToolTip("Add watermark to selected photos")
+        self.watermark_btn.setStyleSheet(self._button_style())
+        self.watermark_btn.clicked.connect(self.watermark_clicked.emit)
+        self.watermark_btn.setEnabled(False)
+        layout.addWidget(self.watermark_btn)
+        
+        self.convert_btn = QPushButton("🔄 WebP")
+        self.convert_btn.setToolTip("Convert selected photos to WebP format")
+        self.convert_btn.setStyleSheet(self._button_style())
+        self.convert_btn.clicked.connect(self.convert_clicked.emit)
+        self.convert_btn.setEnabled(False)
+        layout.addWidget(self.convert_btn)
+        
+        layout.addSpacing(8)
+        
+        # Organize dropdown menu
+        organize_btn = QPushButton("📦 Organize ▼")
+        organize_btn.setStyleSheet(self._action_button_style())
+        organize_menu = QMenu(self)
+        organize_menu.setStyleSheet(self._menu_style())
+        
+        move_action = organize_menu.addAction("📦 Move to...")
+        move_action.triggered.connect(self.move_clicked.emit)
+        copy_action = organize_menu.addAction("📋 Copy to...")
+        copy_action.triggered.connect(self.copy_clicked.emit)
+        
+        organize_btn.setMenu(organize_menu)
+        self.organize_btn = organize_btn
+        self.organize_btn.setEnabled(False)
+        layout.addWidget(organize_btn)
+        
+        # Undo button
+        self.undo_btn = QPushButton("↩️ Undo")
+        self.undo_btn.setStyleSheet(self._button_style())
+        self.undo_btn.clicked.connect(self.undo_clicked.emit)
+        self.undo_btn.setEnabled(False)
+        layout.addWidget(self.undo_btn)
+        
+        layout.addSpacing(12)
+        
+        # Small selection buttons
+        self.select_all_btn = QPushButton("✓")
+        self.select_all_btn.setToolTip("Select All (Ctrl+A)")
+        self.select_all_btn.setFixedSize(28, 28)
+        self.select_all_btn.setStyleSheet(self._small_icon_button_style())
         self.select_all_btn.clicked.connect(self.select_all_clicked.emit)
         layout.addWidget(self.select_all_btn)
         
-        self.deselect_btn = QPushButton("Deselect All")
-        self.deselect_btn.setStyleSheet(self._button_style())
+        self.deselect_btn = QPushButton("✗")
+        self.deselect_btn.setToolTip("Deselect All")
+        self.deselect_btn.setFixedSize(28, 28)
+        self.deselect_btn.setStyleSheet(self._small_icon_button_style())
         self.deselect_btn.clicked.connect(self.deselect_all_clicked.emit)
         layout.addWidget(self.deselect_btn)
         
         # View mode buttons
         layout.addSpacing(12)
-        view_label = QLabel("🔍")
-        view_label.setStyleSheet("color: #888; font-size: 14px;")
-        layout.addWidget(view_label)
         
         self._view_mode = "thumbnails"
         self.view_btns = {}
@@ -106,56 +180,6 @@ class ToolBar(QWidget):
         self.selection_label.setFont(QFont("Segoe UI", 10))
         self.selection_label.setStyleSheet("color: #888;")
         layout.addWidget(self.selection_label)
-        
-        # Separator
-        layout.addSpacing(16)
-        
-        # Action buttons
-        self.rename_btn = QPushButton("✏️ Rename...")
-        self.rename_btn.setStyleSheet(self._button_style())
-        self.rename_btn.clicked.connect(self.rename_clicked.emit)
-        self.rename_btn.setEnabled(False)
-        layout.addWidget(self.rename_btn)
-        
-        self.location_btn = QPushButton("📍 Set Location...")
-        self.location_btn.setToolTip("Manually set location for selected photos")
-        self.location_btn.setStyleSheet(self._button_style())
-        self.location_btn.clicked.connect(self.set_location_clicked.emit)
-        self.location_btn.setEnabled(False)
-        layout.addWidget(self.location_btn)
-        
-        self.rotate_ccw_btn = QPushButton("↺")
-        self.rotate_ccw_btn.setToolTip("Rotate counterclockwise")
-        self.rotate_ccw_btn.setStyleSheet(self._small_button_style())
-        self.rotate_ccw_btn.clicked.connect(self.rotate_ccw_clicked.emit)
-        self.rotate_ccw_btn.setEnabled(False)
-        layout.addWidget(self.rotate_ccw_btn)
-        
-        self.rotate_cw_btn = QPushButton("↻")
-        self.rotate_cw_btn.setToolTip("Rotate clockwise")
-        self.rotate_cw_btn.setStyleSheet(self._small_button_style())
-        self.rotate_cw_btn.clicked.connect(self.rotate_cw_clicked.emit)
-        self.rotate_cw_btn.setEnabled(False)
-        layout.addWidget(self.rotate_cw_btn)
-        
-        self.move_btn = QPushButton("📦 Move to...")
-        self.move_btn.setStyleSheet(self._action_button_style())
-        self.move_btn.clicked.connect(self.move_clicked.emit)
-        self.move_btn.setEnabled(False)
-        layout.addWidget(self.move_btn)
-        
-        self.copy_btn = QPushButton("📋 Copy to...")
-        self.copy_btn.setStyleSheet(self._action_button_style())
-        self.copy_btn.clicked.connect(self.copy_clicked.emit)
-        self.copy_btn.setEnabled(False)
-        layout.addWidget(self.copy_btn)
-        
-        # Undo button
-        self.undo_btn = QPushButton("↩️ Undo")
-        self.undo_btn.setStyleSheet(self._button_style())
-        self.undo_btn.clicked.connect(self.undo_clicked.emit)
-        self.undo_btn.setEnabled(False)
-        layout.addWidget(self.undo_btn)
         
         # Spacer before settings/about
         layout.addSpacing(12)
@@ -187,12 +211,14 @@ class ToolBar(QWidget):
     def update_selection_count(self, count: int, total: int):
         """Update the selection count label."""
         self.selection_label.setText(f"{count} of {total} selected")
-        self.rename_btn.setEnabled(count > 0)
-        self.location_btn.setEnabled(count > 0)
-        self.rotate_cw_btn.setEnabled(count > 0)
-        self.rotate_ccw_btn.setEnabled(count > 0)
-        self.move_btn.setEnabled(count > 0)
-        self.copy_btn.setEnabled(count > 0)
+        # Enable dropdown menus when photos are selected
+        self.edit_btn.setEnabled(count > 0)
+        self.organize_btn.setEnabled(count > 0)
+        # Enable processing buttons
+        self.resize_btn.setEnabled(count > 0)
+        self.watermark_btn.setEnabled(count > 0)
+        self.convert_btn.setEnabled(count > 0)
+        self.batch_btn.setEnabled(count > 0)
     
     def set_undo_enabled(self, enabled: bool):
         """Enable/disable the undo button."""
@@ -365,5 +391,45 @@ class ToolBar(QWidget):
                 border: 1px solid #555;
                 color: #e0e0e0;
                 selection-background-color: #4a9eff;
+            }
+        """
+    
+    def _menu_style(self) -> str:
+        return """
+            QMenu {
+                background-color: #2d2d2d;
+                border: 1px solid #555;
+                border-radius: 6px;
+                color: #e0e0e0;
+                padding: 4px;
+            }
+            QMenu::item {
+                padding: 8px 20px;
+                border-radius: 4px;
+            }
+            QMenu::item:selected {
+                background-color: #4a9eff;
+            }
+            QMenu::separator {
+                height: 1px;
+                background-color: #555;
+                margin: 4px 8px;
+            }
+        """
+    
+    def _small_icon_button_style(self) -> str:
+        return """
+            QPushButton {
+                background-color: #3a3a3a;
+                border: 1px solid #555;
+                border-radius: 4px;
+                color: #e0e0e0;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #4a4a4a;
+            }
+            QPushButton:pressed {
+                background-color: #5a5a5a;
             }
         """

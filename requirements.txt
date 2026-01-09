@@ -6,3 +6,4 @@ exifread>=3.0.0
 geopy>=2.4.0
 send2trash>=1.8.0
 imagehash>=4.3.0
+piexif>=1.1.3

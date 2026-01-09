@@ -30,6 +30,14 @@ A modern photo organization tool for sorting, grouping, and managing your photo 
 - **Delete** - Move to Recycle Bin (can be restored)
 - **Preview** - Full-size preview with metadata panel
 
+### 🖼️ Image Processing (v1.2.0)
+- **⚡ Batch Processing** - Chain multiple operations: Resize → Rotate → Rename → Watermark → WebP
+- **Mass Resize** - Resize by percentage, max dimension, or exact size
+- **Text Watermark** - Custom text with system fonts, color, and opacity
+- **Image Watermark** - Use any image as a watermark (logos, signatures)
+- **WebP Conversion** - Convert to WebP for optimized web uploads
+- Output saved to subfolders (`Batch Processed/`, `Resized/`, `Watermarked/`, `WebP/`)
+
 ### 📷 Format Support
 - **Standard**: JPG, PNG, GIF, BMP, TIFF, WebP
 - **RAW**: CR2, CR3, NEF, ARW, DNG, RAF, ORF, RW2
@@ -58,9 +66,7 @@ python main.py
 ## Usage
 
 ### Opening Photos
-- Click **📁 Open Folder** or press `Ctrl+O` to load a folder
-- Click **📄** to open individual image files
-- Click **+📁** to add another folder (cumulative)
+- Click **📁 File** menu to open folder, files, or add folders
 - **Drag & drop** files or folders onto the window
 
 ### Keyboard Shortcuts
@@ -103,7 +109,9 @@ PhotoTidy/
 │   ├── metadata.py          # EXIF extraction
 │   ├── thumbnail.py         # Thumbnail generation
 │   ├── geocoding.py         # Reverse geocoding
-│   └── operations.py        # File operations (move/copy)
+│   ├── operations.py        # File operations (move/copy)
+│   ├── image_processing.py  # Resize, watermark, WebP conversion
+│   └── batch_pipeline.py    # Batch processing pipeline engine
 ├── sorting/                 # Sorting strategies
 │   ├── base.py              # Base strategy interface
 │   ├── date_sorter.py       # Date-based sorting
@@ -124,6 +132,10 @@ PhotoTidy/
 │   ├── flow_layout.py       # Flow layout for thumbnails
 │   ├── rename_dialog.py     # Batch rename dialog
 │   ├── location_dialog.py   # Location tagging dialog
+│   ├── resize_dialog.py     # Batch resize dialog
+│   ├── watermark_dialog.py  # Watermark dialog
+│   ├── convert_dialog.py    # WebP conversion dialog
+│   ├── batch_dialog.py      # Batch processing dialog
 │   ├── settings_dialog.py   # Settings dialog
 │   └── about_dialog.py      # About dialog
 └── utils/                   # Utilities

@@ -124,15 +124,72 @@ class PreviewPanel(QWidget):
         self.filename_label.setText(photo.filename)
     
     def _load_image(self, path: Path) -> Optional[QPixmap]:
-        """Load image from path, handling RAW formats."""
+        """Load image from path, handling RAW formats and EXIF orientation."""
         try:
             if path.suffix.lower() in RAW_IMAGE_EXTENSIONS:
                 return self._load_raw_image(path)
             else:
-                return QPixmap(str(path))
+                # Load pixmap directly (fast)
+                pixmap = QPixmap(str(path))
+                
+                # Apply EXIF orientation transform (fast - just reads orientation tag)
+                orientation = self._get_exif_orientation(path)
+                if orientation and orientation != 1:
+                    pixmap = self._apply_orientation(pixmap, orientation)
+                
+                return pixmap
         except Exception as e:
             print(f"Error loading image: {e}")
             return None
+    
+    def _get_exif_orientation(self, path: Path) -> Optional[int]:
+        """Read EXIF orientation tag quickly."""
+        try:
+            with Image.open(path) as img:
+                exif = img._getexif()
+                if exif:
+                    # Orientation tag is 274
+                    return exif.get(274, 1)
+        except Exception:
+            pass
+        return 1
+    
+    def _apply_orientation(self, pixmap: QPixmap, orientation: int) -> QPixmap:
+        """Apply EXIF orientation transform to pixmap."""
+        from PySide6.QtGui import QTransform
+        
+        transform = QTransform()
+        
+        # EXIF orientation values:
+        # 1: Normal
+        # 2: Flipped horizontally
+        # 3: Rotated 180°
+        # 4: Flipped vertically
+        # 5: Rotated 90° CCW and flipped horizontally
+        # 6: Rotated 90° CW
+        # 7: Rotated 90° CW and flipped horizontally
+        # 8: Rotated 90° CCW
+        
+        if orientation == 2:
+            transform.scale(-1, 1)
+        elif orientation == 3:
+            transform.rotate(180)
+        elif orientation == 4:
+            transform.scale(1, -1)
+        elif orientation == 5:
+            transform.rotate(-90)
+            transform.scale(-1, 1)
+        elif orientation == 6:
+            transform.rotate(90)
+        elif orientation == 7:
+            transform.rotate(90)
+            transform.scale(-1, 1)
+        elif orientation == 8:
+            transform.rotate(-90)
+        else:
+            return pixmap
+        
+        return pixmap.transformed(transform, Qt.TransformationMode.SmoothTransformation)
     
     def _load_raw_image(self, path: Path) -> Optional[QPixmap]:
         """Load a RAW image and convert to QPixmap."""

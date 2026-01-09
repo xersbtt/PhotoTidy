@@ -6,7 +6,7 @@ from typing import Optional
 import hashlib
 import logging
 
-from PIL import Image
+from PIL import Image, ImageOps
 import rawpy
 
 # Register HEIC/HEIF support
@@ -75,6 +75,9 @@ class ThumbnailManager:
         """Generate thumbnail for standard image formats."""
         try:
             with Image.open(photo_path) as img:
+                # Apply EXIF orientation to correct rotation
+                img = ImageOps.exif_transpose(img)
+                
                 # Convert to RGB if necessary
                 if img.mode in ('RGBA', 'P'):
                     img = img.convert('RGB')
@@ -98,6 +101,8 @@ class ThumbnailManager:
                     if thumb.format == rawpy.ThumbFormat.JPEG:
                         import io
                         img = Image.open(io.BytesIO(thumb.data))
+                        # Apply EXIF orientation for embedded thumbnails too
+                        img = ImageOps.exif_transpose(img)
                         img.thumbnail(size, Image.Resampling.LANCZOS)
                         return img.convert('RGB')
                 except rawpy.LibRawNoThumbnailError:

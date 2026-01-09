@@ -5,7 +5,32 @@ All notable changes to PhotoTidy will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.0] - 2026-01-09
+## [1.2.0]
+
+### Added
+- **Batch Processing Pipeline** - Chain multiple operations in a single workflow:
+  - Add steps: Resize, Rotate, Rename, Text Watermark, Image Watermark, WebP
+  - Reorder steps with ↑↓ buttons
+  - Live preview of the entire pipeline
+  - Output saved to "Batch Processed/" folder
+- **Mass Resize** - Batch resize photos by percentage, max dimension, or exact size
+- **Text Watermark** - Add custom text watermarks with system fonts, color, and opacity
+- **Image Watermark** - Use any image file as a watermark (logos, signatures)
+- **WebP Conversion** - Convert photos to WebP format for optimized web uploads
+  - Quality slider for lossy compression
+  - Lossless compression option
+  - Shows estimated file size savings
+
+### Technical
+- New `core/batch_pipeline.py` module for chaining operations
+- New `core/image_processing.py` module for image transformations
+- All processed images save to subfolders (`Batch Processed/`, `Resized/`, `Watermarked/`, `WebP/`)
+- EXIF metadata preserved in all output files
+
+### Improved
+- **Toolbar Layout** - Reorganized with dropdown menus (File, Edit, Organize) for cleaner UI
+
+## [1.1.0]
 
 ### Added
 - **Open Files** - Open individual image files instead of entire folders

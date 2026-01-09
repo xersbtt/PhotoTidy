@@ -5,7 +5,34 @@ All notable changes to PhotoTidy will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] - 2026-01-09
+## [1.1.0] - 2026-01-09
+
+### Added
+- **Open Files** - Open individual image files instead of entire folders
+- **Add Folder** - Append folder contents to current view (cumulative loading)
+- **Configurable Location Format** - Choose from 5 display formats:
+  - Suburb/Locality only
+  - City only
+  - Suburb + Country
+  - City + Country
+  - Full (City, State, Country)
+- **Image Dimensions** - Photo Details panel now shows width × height
+- **Delete to Recycle Bin** - Delete photos safely (can restore from Recycle Bin)
+- **Remove from View** - Hide photos from app without deleting files
+- **Settings Persistence** - All settings now save and restore across sessions
+
+### Improved
+- **Smart Drag & Drop** - Dropping files adds only those files; dropping folders replaces view
+- **Suburb Support** - Australian suburbs now correctly detected in location data
+
+### Fixed
+- **GPS Extraction Bug** - Fixed issue where GPS coordinates weren't extracted from some photos (IFD pointer handling)
+- **Drag & Drop Files** - Fixed TypeError when dropping individual files
+
+### Dependencies
+- Added `send2trash>=1.8.0` for Recycle Bin support
+
+## [1.0.0] 
 
 ### Added
 - **Photo Loading**

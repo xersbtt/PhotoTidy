@@ -83,6 +83,8 @@ class GeocodingService:
     
     def _format_location(self, address: dict, format_type: str) -> str:
         """Format address dictionary based on format type."""
+        # Suburb/locality first (for Australian addresses), then city, town, village, etc.
+        suburb = address.get('suburb') or address.get('neighbourhood') or address.get('locality')
         city = (
             address.get('city') or 
             address.get('town') or 
@@ -93,19 +95,28 @@ class GeocodingService:
         state = address.get('state', '')
         country = address.get('country', '')
         
+        # Use suburb if available, otherwise fall back to city
+        local_area = suburb or city
+        
         if format_type == 'country':
             return country or 'Unknown'
+        elif format_type == 'suburb':
+            return suburb or city or country or 'Unknown'
         elif format_type == 'city':
-            return city or country or 'Unknown'
+            return city or suburb or country or 'Unknown'
+        elif format_type == 'suburb_country':
+            if local_area and country:
+                return f"{local_area}, {country}"
+            return local_area or country or 'Unknown'
         elif format_type == 'city_country':
             if city and country:
                 return f"{city}, {country}"
             return city or country or 'Unknown'
         elif format_type == 'full':
-            parts = [p for p in [city, state, country] if p]
+            parts = [p for p in [local_area, state, country] if p]
             return ', '.join(parts) or 'Unknown'
         else:
-            return city or country or 'Unknown'
+            return local_area or country or 'Unknown'
     
     def _rate_limit(self):
         """Enforce rate limiting for Nominatim."""

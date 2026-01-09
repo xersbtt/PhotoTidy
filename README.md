@@ -15,6 +15,7 @@ A modern photo organization tool for sorting, grouping, and managing your photo 
 - **Location Sorting** - Automatic GPS-based grouping with reverse geocoding
 - **Camera Sorting** - Organize by camera make/model
 - **Manual Location Tagging** - Tag photos without GPS data
+- **Configurable Location Format** - Choose suburb, city, or full address display
 
 ### 🎨 Multiple View Modes
 - **Thumbnails** - Large preview icons
@@ -26,6 +27,7 @@ A modern photo organization tool for sorting, grouping, and managing your photo 
 - **Batch Rename** - Custom patterns (date, location, sequence)
 - **Move/Copy** - Organize into folders with undo support
 - **Rotate** - Lossless EXIF-based rotation
+- **Delete** - Move to Recycle Bin (can be restored)
 - **Preview** - Full-size preview with metadata panel
 
 ### 📷 Format Support
@@ -56,8 +58,10 @@ python main.py
 ## Usage
 
 ### Opening Photos
-- Click **📁 Open Folder** or press `Ctrl+O`
-- **Drag & drop** a folder or images onto the window
+- Click **📁 Open Folder** or press `Ctrl+O` to load a folder
+- Click **📄** to open individual image files
+- Click **+📁** to add another folder (cumulative)
+- **Drag & drop** files or folders onto the window
 
 ### Keyboard Shortcuts
 
@@ -78,36 +82,54 @@ Right-click any photo for quick actions:
 - Open File / Show in Explorer
 - Select/Deselect
 - Rename / Set Location
-- Delete
+- Remove from View
+- Delete (Recycle Bin)
 
 ## Project Structure
 
 ```
 PhotoTidy/
-├── main.py              # Application entry point
-├── config.py            # Configuration and constants
-├── requirements.txt     # Python dependencies
-├── core/                # Core functionality
-│   ├── photo.py         # Photo data model
-│   ├── metadata.py      # EXIF extraction
-│   ├── thumbnail.py     # Thumbnail generation
-│   ├── geocoding.py     # Reverse geocoding
-│   └── operations.py    # File operations
-├── sorting/             # Sorting strategies
-│   ├── base.py          # Base strategy interface
-│   ├── date_sorter.py   # Date-based sorting
-│   ├── location_sorter.py
-│   ├── camera_sorter.py
-│   └── grouped.py       # Photo grouping
-├── ui/                  # User interface
-│   ├── main_window.py   # Main application window
-│   ├── toolbar.py       # Toolbar with actions
-│   ├── filter_panel.py  # Filter/sort controls
-│   ├── group_widget.py  # Photo group display
-│   └── ...
-└── utils/               # Utilities
-    ├── renamer.py       # Batch renaming
-    └── rotate.py        # Image rotation
+├── main.py                  # Application entry point
+├── config.py                # Configuration and constants
+├── requirements.txt         # Python dependencies
+├── LICENSE                  # MIT License
+├── README.md
+├── CHANGELOG.md
+├── assets/
+│   ├── banner.png           # GitHub banner image
+│   └── icon.png             # Application icon
+├── core/                    # Core functionality
+│   ├── photo.py             # Photo data model
+│   ├── metadata.py          # EXIF extraction
+│   ├── thumbnail.py         # Thumbnail generation
+│   ├── geocoding.py         # Reverse geocoding
+│   └── operations.py        # File operations (move/copy)
+├── sorting/                 # Sorting strategies
+│   ├── base.py              # Base strategy interface
+│   ├── date_sorter.py       # Date-based sorting
+│   ├── location_sorter.py   # Location-based sorting
+│   ├── camera_sorter.py     # Camera-based sorting
+│   ├── compound_sorter.py   # Multi-criteria sorting
+│   ├── dynamic_sorter.py    # Dynamic sorting
+│   └── grouped.py           # Photo grouping
+├── ui/                      # User interface
+│   ├── main_window.py       # Main application window
+│   ├── toolbar.py           # Toolbar with actions
+│   ├── filter_panel.py      # Filter/sort controls
+│   ├── group_widget.py      # Photo group display
+│   ├── photo_thumbnail.py   # Thumbnail widget
+│   ├── view_items.py        # List/detail view items
+│   ├── preview_panel.py     # Photo preview
+│   ├── metadata_panel.py    # EXIF metadata display
+│   ├── flow_layout.py       # Flow layout for thumbnails
+│   ├── rename_dialog.py     # Batch rename dialog
+│   ├── location_dialog.py   # Location tagging dialog
+│   ├── settings_dialog.py   # Settings dialog
+│   └── about_dialog.py      # About dialog
+└── utils/                   # Utilities
+    ├── renamer.py           # Batch renaming logic
+    ├── rotate.py            # Image rotation
+    └── hash.py              # File hashing
 ```
 
 ## Dependencies
@@ -118,6 +140,7 @@ PhotoTidy/
 - **exifread** - EXIF metadata extraction
 - **rawpy** - RAW file processing
 - **geopy** - Reverse geocoding
+- **send2trash** - Safe file deletion (Recycle Bin)
 
 ## License
 

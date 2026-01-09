@@ -6,7 +6,7 @@ from pathlib import Path
 
 # Application info
 APP_NAME = "PhotoTidy"
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.1.0"
 
 # Supported file extensions
 STANDARD_IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.tiff', '.tif', '.webp', '.heic', '.heif', '.bmp', '.gif'}
@@ -36,7 +36,16 @@ DATE_FORMATS = {
 
 # Default settings
 DEFAULT_DATE_FORMAT = 'year_month'
-DEFAULT_LOCATION_FORMAT = 'city_country'  # Options: 'country', 'city', 'city_country'
+DEFAULT_LOCATION_FORMAT = 'city_country'
+
+# Location format options (key -> display label)
+LOCATION_FORMAT_OPTIONS = {
+    'suburb': 'Suburb/Locality only',
+    'city': 'City only',
+    'suburb_country': 'Suburb + Country',
+    'city_country': 'City + Country',
+    'full': 'Full (City, State, Country)',
+}
 
 # UI settings
 GRID_COLUMNS = 4

@@ -23,6 +23,8 @@ class GroupWidget(QWidget):
     photo_clicked = Signal(Photo)
     photo_double_clicked = Signal(Photo)
     selection_changed = Signal()
+    delete_requested = Signal(Photo)
+    remove_requested = Signal(Photo)
     
     def __init__(self, group: PhotoGroup, view_mode: str = "thumbnails", parent=None):
         super().__init__(parent)
@@ -189,6 +191,12 @@ class GroupWidget(QWidget):
             item.clicked.connect(self._on_photo_clicked)
             item.double_clicked.connect(self._on_photo_double_clicked)
             item.selection_changed.connect(self._on_selection_changed)
+            
+            # Connect context menu actions if available
+            if hasattr(item, 'delete_requested'):
+                item.delete_requested.connect(self.delete_requested.emit)
+            if hasattr(item, 'remove_requested'):
+                item.remove_requested.connect(self.remove_requested.emit)
             
             self._thumbnail_widgets.append(item)
             self.content_layout.addWidget(item)

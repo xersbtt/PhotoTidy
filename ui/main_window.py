@@ -11,13 +11,13 @@ from PySide6.QtWidgets import (
     QScrollArea, QFileDialog, QMessageBox, QProgressDialog, QApplication,
     QMenu
 )
-from PySide6.QtCore import Qt, QThread, Signal, QMimeData
+from PySide6.QtCore import Qt, QThread, Signal, QMimeData, QSettings
 from PySide6.QtGui import QShortcut, QKeySequence, QDragEnterEvent, QDropEvent, QIcon
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from config import APP_NAME, APP_VERSION, ALL_SUPPORTED_EXTENSIONS
+from config import APP_NAME, APP_VERSION, ALL_SUPPORTED_EXTENSIONS, DEFAULT_LOCATION_FORMAT
 from core.photo import Photo
 from core.metadata import extract_metadata
 from core.thumbnail import ThumbnailManager
@@ -89,6 +89,8 @@ class PhotoLoaderWorker(QThread):
                 photo.gps_longitude = metadata.get('gps_longitude')
                 photo.camera_make = metadata.get('camera_make')
                 photo.camera_model = metadata.get('camera_model')
+                photo.width = metadata.get('width')
+                photo.height = metadata.get('height')
                 
                 # Generate thumbnail
                 thumb_path = self.thumbnail_manager.get_thumbnail(file_path)
@@ -116,10 +118,14 @@ class MainWindow(QMainWindow):
         self.geocoding_service = GeocodingService()
         self.file_operations = FileOperations()
         
+        # Load location format from settings
+        qsettings = QSettings('PhotoTidy', 'PhotoTidy')
+        location_format = qsettings.value('location_format', DEFAULT_LOCATION_FORMAT, type=str)
+        
         # Initialize individual sorters
         self.sorters = {
             'date': DateSorter(format_type=DateSorter.FORMAT_YEAR_MONTH_DAY),
-            'location': LocationSorter(geocoding_service=self.geocoding_service),
+            'location': LocationSorter(format_type=location_format, geocoding_service=self.geocoding_service),
             'camera': CameraSorter(),
         }
         
@@ -259,6 +265,8 @@ class MainWindow(QMainWindow):
         self.toolbar.undo_clicked.connect(self._undo_last)
         self.toolbar.select_all_clicked.connect(self._select_all)
         self.toolbar.deselect_all_clicked.connect(self._deselect_all)
+        self.toolbar.open_files_clicked.connect(self._open_files)
+        self.toolbar.add_folder_clicked.connect(self._add_folder)
         
         # Filter panel signals
         self.filter_panel.filters_changed.connect(self._on_filters_changed)
@@ -317,7 +325,7 @@ class MainWindow(QMainWindow):
             event.acceptProposedAction()
     
     def dropEvent(self, event: QDropEvent):
-        """Handle drop - load folder or individual files."""
+        """Handle drop - load folder or add individual files."""
         urls = event.mimeData().urls()
         if not urls:
             return
@@ -325,13 +333,12 @@ class MainWindow(QMainWindow):
         first_path = Path(urls[0].toLocalFile())
         
         if first_path.is_dir():
-            # Dropped a folder - load it
+            # Dropped a folder - load it (replaces current view)
             self._load_from_path(first_path)
         else:
-            # Dropped files - load their parent folder and select them
-            folder = first_path.parent
+            # Dropped files - add only those files to current view
             dropped_files = [Path(url.toLocalFile()) for url in urls]
-            self._load_from_path(folder, select_files=dropped_files)
+            self._add_individual_files(dropped_files)
     
     def _load_from_path(self, folder_path: Path, select_files: List[Path] = None):
         """Load photos from a path."""
@@ -372,8 +379,65 @@ class MainWindow(QMainWindow):
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         if reply == QMessageBox.StandardButton.Yes:
-            # TODO: Implement delete to recycle bin
-            QMessageBox.information(self, "Not Implemented", "Delete feature coming soon!")
+            self._delete_photos(selected)
+    
+    def _on_delete_photo(self, photo: Photo):
+        """Handle delete request for a single photo from context menu."""
+        reply = QMessageBox.warning(
+            self,
+            "Delete Photo",
+            f"Move '{photo.filename}' to Recycle Bin?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            self._delete_photos([photo])
+    
+    def _delete_photos(self, photos: List[Photo]):
+        """Delete photos by moving them to Recycle Bin."""
+        try:
+            from send2trash import send2trash
+        except ImportError:
+            QMessageBox.warning(self, "Missing Dependency", 
+                "send2trash is required for delete. Install with: pip install send2trash")
+            return
+        
+        deleted = 0
+        errors = []
+        for photo in photos:
+            try:
+                send2trash(str(photo.path))
+                deleted += 1
+            except Exception as e:
+                errors.append(f"{photo.filename}: {e}")
+        
+        # Remove from view
+        self._remove_photos_from_view(photos)
+        
+        # Show result
+        msg = f"Moved {deleted} photo(s) to Recycle Bin."
+        if errors:
+            msg += f"\n\n{len(errors)} errors:\n" + "\n".join(errors[:5])
+        QMessageBox.information(self, "Delete Complete", msg)
+    
+    def _on_remove_photo(self, photo: Photo):
+        """Handle remove from view request for a single photo."""
+        self._remove_photos_from_view([photo])
+    
+    def _remove_photos_from_view(self, photos: List[Photo]):
+        """Remove photos from the current view without deleting files."""
+        # Remove from grouper's photo list
+        for photo in photos:
+            if photo in self.grouper.photos:
+                self.grouper.photos.remove(photo)
+        
+        # Rebuild the UI
+        if self.grouper.total_count > 0:
+            self.grouper.set_strategy(self.current_sorter)
+            self._rebuild_groups()
+        else:
+            self._clear_groups()
+        
+        self._update_selection_count()
     
     def _show_about(self):
         """Show about dialog."""
@@ -383,7 +447,23 @@ class MainWindow(QMainWindow):
     def _show_settings(self):
         """Show settings dialog."""
         dialog = SettingsDialog(self)
+        dialog.settings_changed.connect(self._on_settings_changed)
         dialog.exec()
+    
+    def _on_settings_changed(self, settings: dict):
+        """Handle settings changes."""
+        # Update location format
+        location_format = settings.get('location_format', DEFAULT_LOCATION_FORMAT)
+        self.sorters['location'].format_type = location_format
+        
+        # If we have photos loaded, rebuild to apply the new format
+        if self.grouper.total_count > 0:
+            # Clear cached location names so they get re-resolved with new format
+            for photo in self.grouper.photos:
+                if photo.has_location:
+                    photo.location_name = None
+            self.grouper.set_strategy(self.current_sorter)
+            self._rebuild_groups()
     
     def _open_folder(self):
         """Open folder selection dialog."""
@@ -396,6 +476,95 @@ class MainWindow(QMainWindow):
         
         if folder:
             self._load_photos(Path(folder))
+    
+    def _open_files(self):
+        """Open file selection dialog for individual images."""
+        files, _ = QFileDialog.getOpenFileNames(
+            self,
+            "Select Photos",
+            "",
+            "Images (*.jpg *.jpeg *.png *.heic *.heif *.tiff *.tif *.webp *.bmp *.gif *.cr2 *.cr3 *.nef *.arw *.dng *.orf *.rw2 *.raf *.srw *.pef *.raw);;All Files (*)"
+        )
+        
+        if files:
+            file_paths = [Path(f) for f in files]
+            self._add_individual_files(file_paths)
+    
+    def _add_folder(self):
+        """Add folder contents to current view (cumulative)."""
+        folder = QFileDialog.getExistingDirectory(
+            self,
+            "Add Folder (append to current view)",
+            "",
+            QFileDialog.Option.ShowDirsOnly
+        )
+        
+        if folder:
+            self._append_folder(Path(folder))
+    
+    def _add_individual_files(self, file_paths: List[Path]):
+        """Add individual files to the current view."""
+        if not file_paths:
+            return
+        
+        # Show progress
+        self.progress = QProgressDialog("Loading photos...", "Cancel", 0, len(file_paths), self)
+        self.progress.setWindowModality(Qt.WindowModality.WindowModal)
+        self.progress.setMinimumDuration(200)
+        
+        new_photos = []
+        for i, file_path in enumerate(file_paths):
+            if not file_path.suffix.lower() in ALL_SUPPORTED_EXTENSIONS:
+                continue
+            try:
+                photo = Photo(path=file_path)
+                metadata = extract_metadata(file_path)
+                photo.date_taken = metadata.get('date_taken')
+                photo.gps_latitude = metadata.get('gps_latitude')
+                photo.gps_longitude = metadata.get('gps_longitude')
+                photo.camera_make = metadata.get('camera_make')
+                photo.camera_model = metadata.get('camera_model')
+                photo.width = metadata.get('width')
+                photo.height = metadata.get('height')
+                photo.thumbnail_path = self.thumbnail_manager.get_thumbnail(file_path)
+                new_photos.append(photo)
+            except Exception as e:
+                logger.error(f"Failed to load {file_path}: {e}")
+            
+            self.progress.setValue(i + 1)
+        
+        self.progress.close()
+        
+        if not new_photos:
+            QMessageBox.information(self, "No Photos", "No supported photos found in the selection.")
+            return
+        
+        # Append to existing or set new
+        if self.grouper.total_count > 0:
+            self.grouper.add_photos(new_photos)
+        else:
+            self.grouper.set_photos(new_photos)
+        
+        self.grouper.set_strategy(self.current_sorter)
+        self._rebuild_groups()
+        self._update_selection_count()
+    
+    def _append_folder(self, folder_path: Path):
+        """Append folder contents to current view."""
+        # Find all images in folder
+        image_files = []
+        for ext in ALL_SUPPORTED_EXTENSIONS:
+            image_files.extend(folder_path.rglob(f"*{ext}"))
+            image_files.extend(folder_path.rglob(f"*{ext.upper()}"))
+        
+        image_files = list(set(image_files))
+        image_files = [f for f in image_files if not f.name.startswith("._")]
+        
+        if not image_files:
+            QMessageBox.information(self, "No Photos", f"No supported photos found in {folder_path}")
+            return
+        
+        self._add_individual_files(image_files)
     
     def _load_photos(self, folder_path: Path):
         """Load photos from the selected folder."""
@@ -421,7 +590,7 @@ class MainWindow(QMainWindow):
             self.progress.setValue(current)
             self.progress.setLabelText(f"Loading photos... ({current}/{total})")
     
-    def _on_photos_loaded(self, photos: List[Photo]):
+    def _on_photos_loaded(self, photos: List[Photo], select_files: List[Path] = None):
         """Handle photos loaded."""
         if hasattr(self, 'progress'):
             self.progress.close()
@@ -437,6 +606,12 @@ class MainWindow(QMainWindow):
         # Rebuild the groups UI
         self._rebuild_groups()
         
+        # Select dropped files if any
+        if select_files:
+            for photo in photos:
+                if photo.path in select_files:
+                    photo.is_selected = True
+        
         # Update selection count
         self._update_selection_count()
     
@@ -450,6 +625,8 @@ class MainWindow(QMainWindow):
             group_widget.photo_clicked.connect(self._on_photo_clicked)
             group_widget.photo_double_clicked.connect(self._on_photo_double_clicked)
             group_widget.selection_changed.connect(self._update_selection_count)
+            group_widget.delete_requested.connect(self._on_delete_photo)
+            group_widget.remove_requested.connect(self._on_remove_photo)
             
             self._group_widgets.append(group_widget)
             self.grid_layout.insertWidget(self.grid_layout.count() - 1, group_widget)

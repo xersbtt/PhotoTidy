@@ -119,8 +119,11 @@ class MetadataPanel(QWidget):
             size_str = f"{size} bytes"
         self._labels['size'].setText(size_str)
         
-        # Dimensions (not available from metadata, would need to load image)
-        self._labels['dimensions'].setText("-")
+        # Dimensions
+        if photo.width and photo.height:
+            self._labels['dimensions'].setText(f"{photo.width} × {photo.height}")
+        else:
+            self._labels['dimensions'].setText("-")
         
         # GPS
         if photo.has_location:

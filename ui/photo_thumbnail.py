@@ -27,6 +27,7 @@ class PhotoThumbnailWidget(QWidget):
     rename_requested = Signal(Photo)
     set_location_requested = Signal(Photo)
     delete_requested = Signal(Photo)
+    remove_requested = Signal(Photo)
     
     def __init__(self, photo: Photo, thumbnail_size: int = 180, parent=None):
         super().__init__(parent)
@@ -221,8 +222,13 @@ class PhotoThumbnailWidget(QWidget):
         
         menu.addSeparator()
         
-        # Delete
-        delete_action = QAction("🗑️ Delete", self)
+        # Remove from view (doesn't delete file)
+        remove_action = QAction("👁️ Remove from View", self)
+        remove_action.triggered.connect(lambda: self.remove_requested.emit(self.photo))
+        menu.addAction(remove_action)
+        
+        # Delete (moves to Recycle Bin)
+        delete_action = QAction("🗑️ Delete (Recycle Bin)", self)
         delete_action.triggered.connect(lambda: self.delete_requested.emit(self.photo))
         menu.addAction(delete_action)
         

@@ -14,6 +14,8 @@ class ToolBar(QWidget):
     """Toolbar with action buttons."""
     
     open_folder_clicked = Signal()
+    open_files_clicked = Signal()
+    add_folder_clicked = Signal()
     rename_clicked = Signal()
     set_location_clicked = Signal()
     rotate_cw_clicked = Signal()
@@ -39,9 +41,26 @@ class ToolBar(QWidget):
         
         # Open folder button
         self.open_btn = QPushButton("📁 Open Folder")
+        self.open_btn.setToolTip("Open a folder (replaces current view)")
         self.open_btn.setStyleSheet(self._primary_button_style())
         self.open_btn.clicked.connect(self.open_folder_clicked.emit)
         layout.addWidget(self.open_btn)
+        
+        # Open files button
+        self.open_files_btn = QPushButton("📄")
+        self.open_files_btn.setToolTip("Open individual files")
+        self.open_files_btn.setFixedSize(32, 32)
+        self.open_files_btn.setStyleSheet(self._icon_button_style())
+        self.open_files_btn.clicked.connect(self.open_files_clicked.emit)
+        layout.addWidget(self.open_files_btn)
+        
+        # Add folder button
+        self.add_folder_btn = QPushButton("+📁")
+        self.add_folder_btn.setToolTip("Add folder (append to current view)")
+        self.add_folder_btn.setFixedSize(32, 32)
+        self.add_folder_btn.setStyleSheet(self._icon_button_style())
+        self.add_folder_btn.clicked.connect(self.add_folder_clicked.emit)
+        layout.addWidget(self.add_folder_btn)
         
         # Separator
         layout.addSpacing(16)

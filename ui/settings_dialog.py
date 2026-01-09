@@ -7,10 +7,10 @@ from PySide6.QtWidgets import (
     QTabWidget, QWidget, QSpinBox, QComboBox, QCheckBox,
     QLineEdit, QFileDialog, QGroupBox, QFormLayout
 )
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QSettings
 from PySide6.QtGui import QFont
 
-from config import THUMBNAIL_SIZE, GRID_COLUMNS
+from config import THUMBNAIL_SIZE, GRID_COLUMNS, LOCATION_FORMAT_OPTIONS, DEFAULT_LOCATION_FORMAT
 
 
 class SettingsDialog(QDialog):
@@ -150,6 +150,21 @@ class SettingsDialog(QDialog):
         ops_layout.addWidget(self.confirm_delete_cb)
         
         layout.addWidget(ops_group)
+        
+        # Location group
+        location_group = QGroupBox("Location")
+        location_layout = QFormLayout(location_group)
+        
+        self.location_format_combo = QComboBox()
+        # Add options from config
+        for key, label in LOCATION_FORMAT_OPTIONS.items():
+            self.location_format_combo.addItem(label, key)
+        # Set default
+        default_idx = list(LOCATION_FORMAT_OPTIONS.keys()).index(DEFAULT_LOCATION_FORMAT)
+        self.location_format_combo.setCurrentIndex(default_idx)
+        location_layout.addRow("Location format:", self.location_format_combo)
+        
+        layout.addWidget(location_group)
         layout.addStretch()
         
         return widget
@@ -229,8 +244,21 @@ class SettingsDialog(QDialog):
     
     def _load_settings(self):
         """Load settings from storage."""
-        # TODO: Load from QSettings or config file
-        pass
+        settings = QSettings('PhotoTidy', 'PhotoTidy')
+        
+        self.remember_folder_cb.setChecked(settings.value('remember_folder', True, type=bool))
+        self.load_subfolders_cb.setChecked(settings.value('load_subfolders', True, type=bool))
+        self.confirm_move_cb.setChecked(settings.value('confirm_move', True, type=bool))
+        self.confirm_delete_cb.setChecked(settings.value('confirm_delete', True, type=bool))
+        self.thumb_size_spin.setValue(settings.value('thumbnail_size', 180, type=int))
+        self.show_metadata_cb.setChecked(settings.value('show_metadata', True, type=bool))
+        self.default_open_edit.setText(settings.value('default_open_path', '', type=str))
+        self.default_export_edit.setText(settings.value('default_export_path', '', type=str))
+        
+        # Location format
+        location_format = settings.value('location_format', DEFAULT_LOCATION_FORMAT, type=str)
+        idx = list(LOCATION_FORMAT_OPTIONS.keys()).index(location_format) if location_format in LOCATION_FORMAT_OPTIONS else 0
+        self.location_format_combo.setCurrentIndex(idx)
     
     def _apply_settings(self):
         """Apply and save settings."""
@@ -239,11 +267,18 @@ class SettingsDialog(QDialog):
             'load_subfolders': self.load_subfolders_cb.isChecked(),
             'confirm_move': self.confirm_move_cb.isChecked(),
             'confirm_delete': self.confirm_delete_cb.isChecked(),
+            'location_format': self.location_format_combo.currentData(),
             'thumbnail_size': self.thumb_size_spin.value(),
             'default_view': self.default_view_combo.currentText().lower(),
             'show_metadata': self.show_metadata_cb.isChecked(),
             'default_open_path': self.default_open_edit.text(),
             'default_export_path': self.default_export_edit.text(),
         }
+        
+        # Save to QSettings
+        qsettings = QSettings('PhotoTidy', 'PhotoTidy')
+        for key, value in self.settings.items():
+            qsettings.setValue(key, value)
+        
         self.settings_changed.emit(self.settings)
         self.accept()

@@ -49,6 +49,8 @@ def _extract_standard_metadata(photo_path: Path) -> dict:
         'gps_longitude': None,
         'camera_make': None,
         'camera_model': None,
+        'width': None,
+        'height': None,
     }
     
     try:
@@ -83,23 +85,25 @@ def _extract_standard_metadata(photo_path: Path) -> dict:
             # Extract GPS data - try multiple ways
             gps_info = exif.get('GPSInfo')
             
-            # For HEIC/pillow-heif, GPS might be in a different location
-            if not gps_info and hasattr(img, 'getexif'):
-                exif_obj = img.getexif()
-                if exif_obj and hasattr(exif_obj, 'get_ifd'):
-                    # GPS IFD is 0x8825
-                    try:
-                        gps_ifd = exif_obj.get_ifd(0x8825)
-                        if gps_ifd:
-                            gps_info = dict(gps_ifd)
-                    except:
-                        pass
+            # GPSInfo might be an integer (IFD pointer) instead of a dict
+            # In that case, or if it's missing, try get_ifd() approach
+            if not isinstance(gps_info, dict) and exif_obj and hasattr(exif_obj, 'get_ifd'):
+                # GPS IFD is 0x8825
+                try:
+                    gps_ifd = exif_obj.get_ifd(0x8825)
+                    if gps_ifd:
+                        gps_info = dict(gps_ifd)
+                except:
+                    pass
             
             if gps_info and isinstance(gps_info, dict):
                 gps_data = {GPSTAGS.get(k, k): v for k, v in gps_info.items()}
                 coords = _parse_gps_info(gps_data)
                 if coords:
                     metadata['gps_latitude'], metadata['gps_longitude'] = coords
+            
+            # Extract image dimensions
+            metadata['width'], metadata['height'] = img.size
                     
     except Exception as e:
         logger.warning(f"Failed to extract metadata from {photo_path}: {e}")
@@ -115,6 +119,8 @@ def _extract_raw_metadata(photo_path: Path) -> dict:
         'gps_longitude': None,
         'camera_make': None,
         'camera_model': None,
+        'width': None,
+        'height': None,
     }
     
     try:

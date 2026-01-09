@@ -23,6 +23,8 @@ class Photo:
     location_name: Optional[str] = None
     camera_make: Optional[str] = None
     camera_model: Optional[str] = None
+    width: Optional[int] = None
+    height: Optional[int] = None
     
     # UI state
     thumbnail_path: Optional[Path] = None
